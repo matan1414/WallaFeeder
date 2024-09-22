@@ -23,12 +23,12 @@ class RSSClass:
 
 
     def print_class(self):
-        object_members = (f'Title: {self.rss_object.title} '
+        object_members = (f'Title: {self.rss_object.title}'
                           f'\nID: {self.rss_object.id}'
-                          f'\nDescription: {self.rss_object.description} '
-                          f'\nImage URL: {self.rss_object.image_url} '
-                          f'\nPublished Date: {self.rss_object.published_date} '
-                          f'\n\n To the product -> {self.rss_object.url}')
+                          f'\nDescription: {self.rss_object.description}'
+                          f'\nImage URL: {self.rss_object.image_url}'
+                          f'\nPublished Date: {self.rss_object.published_date}'
+                          f'\n\nURL -> {self.rss_object.url}')
         return object_members
 
 
