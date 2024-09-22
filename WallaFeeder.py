@@ -4,7 +4,6 @@ from typing import Final
 from telegram import Update
 from telegram.ext import CommandHandler, MessageHandler, filters, ContextTypes, Application, CallbackContext, JobQueue
 from bs4 import BeautifulSoup
-import time
 import RSSClass
 import Enums
 import feedparser
