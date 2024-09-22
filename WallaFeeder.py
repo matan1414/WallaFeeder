@@ -44,7 +44,7 @@ async def start_listen_command(update: Update, context:CallbackContext):
         await update.message.reply_text('Start listening for new products!')
         chat_id = update.message.chat_id
         logger.debug('Started run_repeating')
-        context.application.job_queue.run_repeating(callback_check_new_entries, 60, name=str(chat_id))
+        context.application.job_queue.run_repeating(callback_check_new_entries, 370, name=str(chat_id))
     else:
         await update.message.reply_text("Sorry, you are not permitted to use this bot.")
 
