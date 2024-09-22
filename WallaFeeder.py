@@ -119,7 +119,8 @@ def check_new_entries():
 
 
 def handle_text_response(text: str) -> str:
-    text = text.lower()
+    new_text = text.lower()
+    return new_text
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -128,8 +129,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     print(f'User ({update.message.chat.id}) in {message_type}: "{text}"')
     if "test" in text:
-        response: str = handle_text_response(text)
-        await update.message.reply_text(response)
+        # response: str = handle_text_response(text)
+        await update.message.reply_text('Test Successful')
     # if message_type == 'group':
     #     if BOT_USERNAME in text:
     #         new_text: str = text.replace(BOT_USERNAME, '').strip()
