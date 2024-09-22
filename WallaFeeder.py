@@ -16,11 +16,16 @@ logger = logging.getLogger('WallaFeederLogger')
 LAST_PRODUCT_ID_YAD2 = '7765792161852'
 LAST_PRODUCT_ID_AGORA = '7765792161852'
 
-
+PERMITTED_IDS = [478184104]
 # Commands
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug(f'In start_command!')
-    await update.message.reply_text('Hello! Thanks for chatting with me. I am LemesiraBot!')
+    user_id = update.effective_user.id
+    if user_id in PERMITTED_IDS:
+        await update.message.reply_text('Hello! Thanks for chatting with me. I am LemesiraBot!')
+    else:
+        await update.message.reply_text("Sorry, you are not permitted to use this bot.")
+
 
 async def help_command(update: Update, context:CallbackContext):
     logger.debug(f'In help_command!')
@@ -61,7 +66,7 @@ def send_message_to_group(RSSObject, chat_id, thread_id=0):
     if RSSObject.image_url:
         url_post = (f"https://api.telegram.org/bot{TOKEN}/sendPhoto?chat_id=" + str(chat_id) +
                     "&photo=" + str(RSSObject.image_url) + "&message_thread_id=" + str(thread_id) +
-                    "&caption=" + "&parse_mode=HTML" +
+                    "&parse_mode=HTML" + "&caption=" +
                     "<b>" + "<a href=\"" + RSSObject.url + "\">" + str(RSSObject.title) + "</a>" + "</b>\n\n" +
                     str(RSSObject.description) + "\n\n" + "וואלה - ערוץ העדכונים הלא רשמי")
         headers = {'content-type': 'application/json', 'Accept-Charset': 'UTF-8'}
@@ -149,12 +154,6 @@ def init_logger():
 
 
 def check_function():
-    # agora_class = AgoraClass.AgoraClass(logger)
-    # for agora_url in Enums.AgoraURLs:
-    #     item_agora_received = agora_class.fetch_item(agora_url)
-    #     item_agora, item_city_topic = agora_class.handle_item(item_agora_received, agora_url.name)
-    #     if item_agora:
-    #         send_message_to_group(Enums.ChatsIds.LemesiraMainGroup, item_city_topic, agora_class.print_class())
     try:
         for current_walla_url in Enums.URLs:
             rss_entry_class = RSSClass.RSSClass(_logger=logger)
@@ -170,7 +169,7 @@ def check_function():
             soup = BeautifulSoup(description_html, 'html.parser')
             rss_entry_class.rss_object.description = soup.get_text(strip=True)
 
-            rss_entry_class.print_class()
+            logger.debug(rss_entry_class.print_class())
             if rss_entry_class.is_new_entry(rss_entry_class.rss_object.id, current_walla_url.name):
                 current_chat_id = getattr(Enums.WallaGroupsChatsIDs, current_walla_url.name, None)
                 send_message_to_group(RSSObject=rss_entry_class.rss_object, chat_id=current_chat_id)
@@ -198,7 +197,6 @@ def check_function():
 if __name__ == '__main__':
     init_logger()
     logger.info('Starting WallaFeeder bot...')
-    logger.debug('branch: agora_scrape')
 
     check_function()
     #init_seleniumbase_driver()
