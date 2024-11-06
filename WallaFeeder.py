@@ -21,34 +21,30 @@ def is_permitted(user_id):
 # Commands
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug(f'In start_command!')
-    user_id = update.effective_user.id
-    if is_permitted(user_id):
-        await update.message.reply_text('Hello! Thanks for chatting with me. I am WallaFeederBot!')
+    logger.debug(f"Update object: {update}")
+    if update and update.effective_user:
+        user_id = update.effective_user.id
+        #logger.debug(f"User ID: {user_id}")
+        #await update.message.reply_text(f"This is the help command, user {user_id}!")
+        if is_permitted(user_id):
+            await update.message.reply_text('Hello! Thanks for chatting with me. I am WallaFeederBot!')
+        else:
+            await update.message.reply_text("Sorry, you are not permitted to use this bot.")
     else:
-        await update.message.reply_text("Sorry, you are not permitted to use this bot.")
+        # Log if either update or effective_user is None
+        logger.error(f"Invalid update or user: {update}, {update.effective_user}")
+    # Further debugging if there's an issue with the message object
+    if not update.message:
+        logger.error("No message object found in the update!")
 
 
 async def help_command(update: Update, context:CallbackContext):
     logger.debug(f'In help_command!')
-    # user_id = update.effective_user.id
-    # if is_permitted(user_id):
-    #     await update.message.reply_text('This is the help command!')
-    # else:
-    #     await update.message.reply_text("Sorry, you are not permitted to use this bot.")
-    # Log the entire update object to see its contents
-    logger.debug(f"Update object: {update}")
-
-    if update and update.effective_user:
-        user_id = update.effective_user.id
-        logger.debug(f"User ID: {user_id}")
-        await update.message.reply_text(f"This is the help command, user {user_id}!")
+    user_id = update.effective_user.id
+    if is_permitted(user_id):
+        await update.message.reply_text('This is the help command!')
     else:
-        # Log if either update or effective_user is None
-        logger.error(f"Invalid update or user: {update}, {update.effective_user}")
-
-    # Further debugging if there's an issue with the message object
-    if not update.message:
-        logger.error("No message object found in the update!")
+        await update.message.reply_text("Sorry, you are not permitted to use this bot.")
 
 
 async def start_listen_command(update: Update, context:CallbackContext):
