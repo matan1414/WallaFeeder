@@ -98,7 +98,7 @@ def check_new_entries():
             rss_feed = feedparser.parse(current_walla_url)
             rss_entry_class.rss_object.title = rss_feed.entries[0].title
             rss_entry_class.rss_object.url = rss_feed.entries[0].link
-            rss_entry_class.rss_object.id = rss_feed.entries[0].id[30:]
+            rss_entry_class.rss_object.id = rss_entry_class.extract_id(rss_feed.entries[0].id)
             rss_entry_class.rss_object.published_date = rss_feed.entries[0].published
             rss_entry_class.rss_object.image_url = rss_feed.entries[0].links[1].href
 
@@ -108,7 +108,11 @@ def check_new_entries():
 
             if rss_entry_class.is_new_entry(rss_entry_class.rss_object.id, current_walla_url.name):
                 logger.debug(rss_entry_class.print_class())
-                current_chat_id = getattr(Enums.WallaGroupsChatsIDs, current_walla_url.name, None)
+                if current_walla_url.name == Enums.URLs.WallaSports.name:
+                    current_chat_id = Enums.WallaGroupsChatsIDs.WallaSports
+                else:
+                    current_chat_id = Enums.WallaGroupsChatsIDs.WallaNews
+                #current_chat_id = getattr(Enums.WallaGroupsChatsIDs, current_walla_url.name, None)
                 send_message_to_group(RSSObject=rss_entry_class.rss_object, chat_id=current_chat_id)
             else:
                 logger.info(f'The entry for {current_walla_url.name} is not a new entry')

@@ -1,5 +1,6 @@
 import logging
 import Enums
+import re
 from bs4 import BeautifulSoup
 #from seleniumbase import Driver
 import time
@@ -37,3 +38,8 @@ class RSSClass:
         if entry_id != last_id:
             setattr(Enums.LastEntriesIDs, category, entry_id)
             return True
+
+    def extract_id(self, url):
+        # Use regular expression to find the first contiguous sequence of digits
+        match = re.search(r'\d+', url)
+        return match.group(0) if match else None
