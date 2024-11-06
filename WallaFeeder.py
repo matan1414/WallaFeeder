@@ -13,7 +13,7 @@ BOT_USERNAME: Final = "@WallaFeederBot"
 DEBUG: Final = True
 logger = logging.getLogger('WallaFeederLogger')
 
-PERMITTED_IDS = [478184104]
+PERMITTED_IDS: Final = os.environ.get('PERMITTED_IDS')
 
 def is_permitted(user_id):
     return user_id in PERMITTED_IDS
