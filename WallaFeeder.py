@@ -13,19 +13,30 @@ BOT_USERNAME: Final = "@WallaFeederBot"
 DEBUG: Final = True
 logger = logging.getLogger('WallaFeederLogger')
 
-PERMITTED_IDS: Final = os.environ.get('PERMITTED_IDS')
+PERMITTED_ID: Final = int(os.environ.get('PERMITTED_ID'))
 
 def is_permitted(user_id):
-    return user_id in PERMITTED_IDS
+    return user_id == PERMITTED_ID
 
 # Commands
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug(f'In start_command!')
-    user_id = update.effective_user.id
-    if is_permitted(user_id):
-        await update.message.reply_text('Hello! Thanks for chatting with me. I am WallaFeederBot!')
+    logger.debug(f"Update object: {update}")
+    logger.debug(f"Message object: {update.message}")
+    if update and update.effective_user:
+        user_id = update.effective_user.id
+        #logger.debug(f"User ID: {user_id}")
+        #await update.message.reply_text(f"This is the help command, user {user_id}!")
+        if is_permitted(user_id):
+            await update.message.reply_text('Hello! Thanks for chatting with me. I am WallaFeederBot!')
+        else:
+            await update.message.reply_text("Sorry, you are not permitted to use this bot.")
     else:
-        await update.message.reply_text("Sorry, you are not permitted to use this bot.")
+        # Log if either update or effective_user is None
+        logger.error(f"Invalid update or user: {update}, {update.effective_user}")
+    # Further debugging if there's an issue with the message object
+    if not update.message:
+        logger.error("No message object found in the update!")
 
 
 async def help_command(update: Update, context:CallbackContext):
