@@ -22,6 +22,7 @@ def is_permitted(user_id):
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug(f'In start_command!')
     logger.debug(f"Update object: {update}")
+    logger.debug(f"Message object: {update.message}")
     if update and update.effective_user:
         user_id = update.effective_user.id
         #logger.debug(f"User ID: {user_id}")
