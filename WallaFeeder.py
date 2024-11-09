@@ -13,10 +13,10 @@ BOT_USERNAME: Final = "@WallaFeederBot"
 DEBUG: Final = True
 logger = logging.getLogger('WallaFeederLogger')
 
-PERMITTED_IDS: Final = os.environ.get('PERMITTED_IDS')
+PERMITTED_ID: Final = int(os.environ.get('PERMITTED_ID'))
 
 def is_permitted(user_id):
-    return user_id in PERMITTED_IDS
+    return user_id == PERMITTED_ID
 
 # Commands
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
