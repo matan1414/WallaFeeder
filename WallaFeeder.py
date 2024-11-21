@@ -52,9 +52,9 @@ async def start_listen_command(update: Update, context:CallbackContext):
     logger.debug(f'In start_listen_command!')
     user_id = update.effective_user.id
     if is_permitted(user_id):
-        await update.message.reply_text('Start listening for new products!')
+        await update.message.reply_text('Start listening for rss!')
         chat_id = update.message.chat_id
-        logger.debug('Started run_repeating')
+        logger.debug('Started callback_check_new_entries')
         context.application.job_queue.run_repeating(callback_check_new_entries, 370, name=str(chat_id))
     else:
         await update.message.reply_text("Sorry, you are not permitted to use this bot.")
@@ -64,16 +64,22 @@ async def stop_listen_command(update: Update, context:CallbackContext):
     logger.debug(f'In stop_listen_command!')
     user_id = update.effective_user.id
     if is_permitted(user_id):
-        await update.message.reply_text('Stopping from listening for new products!')
+        await update.message.reply_text('Stopping from listening for rss!')
         chat_id = update.message.chat_id
         # context.bot.send_message(chat_id=chat_id, text='Stopping automatic messages!')
         logger.debug('Looking for jobs')
         # job = context.application.job_queue.jobs()
         job = context.application.job_queue.get_jobs_by_name(name=str(chat_id))
-        logger.debug('Stop job[0]')
-        job[0].schedule_removal()
+        if job:
+            logger.debug('Stoping job[0]')
+            job[0].schedule_removal()
+        else:
+            logger.debug('There are no jobs scheduled.')
+            await update.message.reply_text('There are no jobs scheduled.')
+
     else:
         await update.message.reply_text("Sorry, you are not permitted to use this bot.")
+
 
 def callback_check_new_entries(context):
     check_new_entries()
@@ -105,6 +111,7 @@ def check_new_entries():
     try:
         for current_walla_url in Enums.URLs:
             rss_entry_class = RSSClass.RSSClass(_logger=logger)
+            logger.info(f'Fetching url: {current_walla_url.name}')
 
             rss_feed = feedparser.parse(current_walla_url)
             rss_entry_class.rss_object.title = rss_feed.entries[0].title
@@ -146,6 +153,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "test" in text:
         # response: str = handle_text_response(text)
         await update.message.reply_text('Test Successful')
+    if "do" in text:
+        check_new_entries()
     # if message_type == 'group':
     #     if BOT_USERNAME in text:
     #         new_text: str = text.replace(BOT_USERNAME, '').strip()
@@ -178,6 +187,7 @@ def init_logger():
 
 
 def check_function():
+    check_new_entries()
     pass
 
 
@@ -185,7 +195,7 @@ if __name__ == '__main__':
     init_logger()
     logger.info('Starting WallaFeeder bot...')
 
-    check_function()
+    #check_function()
     app = Application.builder().token(TOKEN).build()
 
     # Add command handlers
