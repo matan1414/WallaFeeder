@@ -113,27 +113,35 @@ def check_new_entries():
             rss_entry_class = RSSClass.RSSClass(_logger=logger)
             logger.info(f'Fetching url: {current_walla_url.name}')
 
+            response = requests.get(current_walla_url)
+            print(response.text)  # Log the feed content
+            if response.status_code != 200:
+                logger.debug(f"Failed to fetch RSS feed, status code: {response.status_code}")
+                return
             rss_feed = feedparser.parse(current_walla_url)
-            rss_entry_class.rss_object.title = rss_feed.entries[0].title
-            rss_entry_class.rss_object.url = rss_feed.entries[0].link
-            rss_entry_class.rss_object.id = rss_entry_class.extract_id(rss_feed.entries[0].id)
-            rss_entry_class.rss_object.published_date = rss_feed.entries[0].published
-            rss_entry_class.rss_object.image_url = rss_feed.entries[0].links[1].href
-
-            description_html = rss_feed.entries[0].description
-            soup = BeautifulSoup(description_html, 'html.parser')
-            rss_entry_class.rss_object.description = soup.get_text(strip=True)
-
-            if rss_entry_class.is_new_entry(rss_entry_class.rss_object.id, current_walla_url.name):
-                logger.debug(rss_entry_class.print_class())
-                if current_walla_url.name == Enums.URLs.WallaSports.name:
-                    current_chat_id = Enums.WallaGroupsChatsIDs.WallaSports
-                else:
-                    current_chat_id = Enums.WallaGroupsChatsIDs.WallaNews
-                #current_chat_id = getattr(Enums.WallaGroupsChatsIDs, current_walla_url.name, None)
-                send_message_to_group(RSSObject=rss_entry_class.rss_object, chat_id=current_chat_id)
+            if rss_feed == None:
+                logger.debug("No entries found in the RSS feed.")
             else:
-                logger.info(f'The entry for {current_walla_url.name} is not a new entry')
+                rss_entry_class.rss_object.title = rss_feed.entries[0].title
+                rss_entry_class.rss_object.url = rss_feed.entries[0].link
+                rss_entry_class.rss_object.id = rss_entry_class.extract_id(rss_feed.entries[0].id)
+                rss_entry_class.rss_object.published_date = rss_feed.entries[0].published
+                rss_entry_class.rss_object.image_url = rss_feed.entries[0].links[1].href
+
+                description_html = rss_feed.entries[0].description
+                soup = BeautifulSoup(description_html, 'html.parser')
+                rss_entry_class.rss_object.description = soup.get_text(strip=True)
+
+                if rss_entry_class.is_new_entry(rss_entry_class.rss_object.id, current_walla_url.name):
+                    logger.debug(rss_entry_class.print_class())
+                    if current_walla_url.name == Enums.URLs.WallaSports.name:
+                        current_chat_id = Enums.WallaGroupsChatsIDs.WallaSports
+                    else:
+                        current_chat_id = Enums.WallaGroupsChatsIDs.WallaNews
+                    #current_chat_id = getattr(Enums.WallaGroupsChatsIDs, current_walla_url.name, None)
+                    send_message_to_group(RSSObject=rss_entry_class.rss_object, chat_id=current_chat_id)
+                else:
+                    logger.info(f'The entry for {current_walla_url.name} is not a new entry')
     except NameError:
         logger.error("Error fetching rss feed")
     except Exception as e:
