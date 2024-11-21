@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 import RSSClass
 import Enums
 import feedparser
+import time
 
 TOKEN: Final = os.environ.get('TOKEN')
 BOT_USERNAME: Final = "@WallaFeederBot"
@@ -114,9 +115,14 @@ def check_new_entries():
             logger.info(f'Fetching url: {current_walla_url.name}')
 
             response = requests.get(current_walla_url)
-            print(response.text)  # Log the feed content
+            logger.debug(response.text)  # Log the feed content
             if response.status_code != 200:
                 logger.debug(f"Failed to fetch RSS feed, status code: {response.status_code}")
+                if response.status_code == 429:
+                    retry_after = response.headers.get("Retry-After")
+                    logger.debug(f"Rate limit exceeded. Try again after {retry_after} seconds.")
+                    # Optionally, wait for the retry duration
+                    time.sleep(int(retry_after))
                 return
             rss_feed = feedparser.parse(current_walla_url)
             if rss_feed == None:
