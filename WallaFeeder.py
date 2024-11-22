@@ -130,7 +130,26 @@ def check_new_entries():
             rss_entry_class = RSSClass.RSSClass(_logger=logger)
             logger.info(f'Fetching url: {current_walla_url.name}')
 
-            response = requests.get(current_walla_url)
+            #response = requests.get(current_walla_url)
+            dedicated_ips = ['3.75.158.163', '3.125.183.140', '35.157.117.28']
+            ip = random.choice(dedicated_ips)
+            session = requests.Session()
+            adapter = IPBindingAdapter(ip)
+            session.mount('https://', adapter)
+            try:
+                response = session.get(Enums.URLs.WallaNews)
+                logger.debug(response.text)
+                if response.status_code != 200:
+                    logger.debug(f"Failed to fetch RSS feed, status code: {response.status_code}")
+                    return
+                rss_feed = feedparser.parse(current_walla_url)
+                if rss_feed == None:
+                    logger.debug("No entries found in the RSS feed.")
+
+            except requests.exceptions.RequestException as e:
+                logger.debug(f"Error: {e}")
+                return None
+
             logger.debug(response.text)  # Log the feed content
             if response.status_code != 200:
                 logger.debug(f"Failed to fetch RSS feed, status code: {response.status_code}")
@@ -179,19 +198,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # response: str = handle_text_response(text)
         await update.message.reply_text('Test Successful')
     if "do" in text:
-        #check_new_entries()
-        dedicated_ips = ['3.75.158.163', '3.125.183.140', '35.157.117.28']
-        ip = random.choice(dedicated_ips)
-        session = requests.Session()
-        adapter = IPBindingAdapter(ip)
-        session.mount('https://', adapter)
-        try:
-            response = session.get(Enums.URLs.WallaNews)
-            return response.text  # Return the RSS feed content
-        except requests.exceptions.RequestException as e:
-            print(f"Error: {e}")
-            return None
-
+        check_new_entries()
     # if message_type == 'group':
     #     if BOT_USERNAME in text:
     #         new_text: str = text.replace(BOT_USERNAME, '').strip()
