@@ -1,4 +1,5 @@
 import logging, sys, os
+import random
 import requests
 from typing import Final
 from telegram import Update
@@ -8,6 +9,21 @@ import RSSClass
 import Enums
 import feedparser
 import time
+from requests.adapters import HTTPAdapter
+
+import socket
+from requests.adapters import HTTPAdapter
+from urllib3.poolmanager import PoolManager
+class IPBindingAdapter(HTTPAdapter):
+    def __init__(self, ip, **kwargs):
+        self.ip = ip  # The IP you want to bind to
+        super().__init__(**kwargs)
+
+    def init_poolmanager(self, *args, **kwargs):
+        # Use socket options to bind the IP address to the socket
+        kwargs['socket_options'] = [(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, self.ip.encode('utf-8'))]
+        return super().init_poolmanager(*args, **kwargs)
+
 
 TOKEN: Final = os.environ.get('TOKEN')
 BOT_USERNAME: Final = "@WallaFeederBot"
@@ -163,7 +179,19 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # response: str = handle_text_response(text)
         await update.message.reply_text('Test Successful')
     if "do" in text:
-        check_new_entries()
+        #check_new_entries()
+        dedicated_ips = ['3.75.158.163', '3.125.183.140', '35.157.117.28']
+        ip = random.choice(dedicated_ips)
+        session = requests.Session()
+        adapter = IPBindingAdapter(ip)
+        session.mount('https://', adapter)
+        try:
+            response = session.get(Enums.URLs.WallaNews)
+            return response.text  # Return the RSS feed content
+        except requests.exceptions.RequestException as e:
+            print(f"Error: {e}")
+            return None
+
     # if message_type == 'group':
     #     if BOT_USERNAME in text:
     #         new_text: str = text.replace(BOT_USERNAME, '').strip()
