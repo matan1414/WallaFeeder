@@ -56,7 +56,7 @@ async def start_listen_command(update: Update, context:CallbackContext):
         await update.message.reply_text('Start listening for rss!')
         chat_id = update.message.chat_id
         logger.debug('Started callback_check_new_entries')
-        context.application.job_queue.run_repeating(callback_check_new_entries, 670, name=str(chat_id))
+        context.application.job_queue.run_repeating(callback_check_new_entries, 2700, name=str(chat_id))
     else:
         await update.message.reply_text("Sorry, you are not permitted to use this bot.")
 
