@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 import RSSClass
 import Enums
 import feedparser
+import time
 
 TOKEN: Final = os.environ.get('TOKEN')
 BOT_USERNAME: Final = "@WallaFeederBot"
@@ -55,7 +56,7 @@ async def start_listen_command(update: Update, context:CallbackContext):
         await update.message.reply_text('Start listening for rss!')
         chat_id = update.message.chat_id
         logger.debug('Started callback_check_new_entries')
-        context.application.job_queue.run_repeating(callback_check_new_entries, 370, name=str(chat_id))
+        context.application.job_queue.run_repeating(callback_check_new_entries, 670, name=str(chat_id))
     else:
         await update.message.reply_text("Sorry, you are not permitted to use this bot.")
 
@@ -111,9 +112,22 @@ def check_new_entries():
     try:
         for current_walla_url in Enums.URLs:
             rss_entry_class = RSSClass.RSSClass(_logger=logger)
-            logger.info(f'Fetching url: {current_walla_url.name}')
+            logger.info(f'\nFetching url: {current_walla_url.name}')
+
+            try:
+                response = requests.get(current_walla_url)
+                if response.status_code != 200:
+                    logger.debug(f"Failed to fetch RSS feed, status code: {response.status_code}")
+                    logger.debug(f"response.text: {response.text}")
+                    return
+            except requests.exceptions.RequestException as e:
+                logger.debug(f"Error: {e}")
+                return None
 
             rss_feed = feedparser.parse(current_walla_url)
+            if rss_feed == None:
+                logger.debug("No entries found in the RSS feed.")
+                continue
             rss_entry_class.rss_object.title = rss_feed.entries[0].title
             rss_entry_class.rss_object.url = rss_feed.entries[0].link
             rss_entry_class.rss_object.id = rss_entry_class.extract_id(rss_feed.entries[0].id)
@@ -134,6 +148,7 @@ def check_new_entries():
                 send_message_to_group(RSSObject=rss_entry_class.rss_object, chat_id=current_chat_id)
             else:
                 logger.info(f'The entry for {current_walla_url.name} is not a new entry')
+            time.sleep(128)
     except NameError:
         logger.error("Error fetching rss feed")
     except Exception as e:
