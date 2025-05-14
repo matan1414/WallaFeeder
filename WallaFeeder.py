@@ -1,4 +1,7 @@
 import logging, sys, os
+import sqlite3
+from datetime import datetime
+
 import requests
 from typing import Final
 from telegram import Update
@@ -8,6 +11,8 @@ import RSSClass
 import Enums
 import feedparser
 import time
+
+BOT_VERSION: Final = 1.1
 
 TOKEN: Final = os.environ.get('TOKEN')
 BOT_USERNAME: Final = "@WallaFeederBot"
@@ -19,11 +24,51 @@ PERMITTED_ID: Final = int(os.environ.get('PERMITTED_ID'))
 def is_permitted(user_id):
     return user_id == PERMITTED_ID
 
+
+# Database setup (SQLite example)
+def setup_database():
+    logger.info('Starting database setup')
+
+    conn = sqlite3.connect('users.db')  # SQLite database for storing user data
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS users
+                 (created_at TEXT, user_id INTEGER PRIMARY KEY, full_name TEXT, username TEXT, language_code TEXT, link TEXT)''')
+    conn.commit()
+    conn.close()
+    logger.debug('Finished database setup')
+
+
+# Function to add user to the database
+def add_user(user):
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    logger.debug(f'Adding new user to database at {current_time}')
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('''INSERT OR REPLACE INTO users (created_at, user_id, full_name, username, language_code, link)
+                 VALUES (?, ?, ?, ?, ?, ?)''',
+              (current_time, user.id, user.full_name, user.username, user.language_code, user.link))
+    conn.commit()
+    conn.close()
+
+
+def list_users():
+    logger.debug(f'Listing users from database')
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("SELECT created_at, user_id, full_name, username, language_code, link FROM users")
+    users = c.fetchall()
+    conn.close()
+    return users
+
+
 # Commands
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug(f'In start_command!')
     logger.debug(f"Update object: {update}")
     logger.debug(f"Message object: {update.message}")
+    user = update.message.from_user  # Get the user who sent the message
+    add_user(user)  # Add the user to the database
+
     if update and update.effective_user:
         user_id = update.effective_user.id
         #logger.debug(f"User ID: {user_id}")
@@ -44,7 +89,10 @@ async def help_command(update: Update, context:CallbackContext):
     logger.debug(f'In help_command!')
     user_id = update.effective_user.id
     if is_permitted(user_id):
-        await update.message.reply_text('This is the help command!')
+        await update.message.reply_text(f'This is the help command!\n'
+                                        'The methods you can use are:\n'
+                                        '\'bot version\'\n\'live\'\n\'set log info\'\n\'set log debug\'\n'
+                                        '\'test method\'\n\'list users\'\n')
     else:
         await update.message.reply_text("Sorry, you are not permitted to use this bot.")
 
@@ -52,11 +100,12 @@ async def help_command(update: Update, context:CallbackContext):
 async def start_listen_command(update: Update, context:CallbackContext):
     logger.debug(f'In start_listen_command!')
     user_id = update.effective_user.id
+    listen_interval = 2700
     if is_permitted(user_id):
-        await update.message.reply_text('Start listening for rss!')
+        await update.message.reply_text(f'Start listening for rss every {listen_interval} seconds!')
         chat_id = update.message.chat_id
         logger.debug('Started callback_check_new_entries')
-        context.application.job_queue.run_repeating(callback_check_new_entries, 2700, name=str(chat_id))
+        context.application.job_queue.run_repeating(callback_check_new_entries, listen_interval, name=str(chat_id))
     else:
         await update.message.reply_text("Sorry, you are not permitted to use this bot.")
 
@@ -161,26 +210,43 @@ def handle_text_response(text: str) -> str:
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    if not is_permitted(user_id):
+        await update.message.reply_text("Sorry, you are not permitted to use this bot.")
+        return
     message_type: str = update.message.chat.type
     text = str = update.message.text.lower()
 
     print(f'User ({update.message.chat.id}) in {message_type}: "{text}"')
-    if "test" in text:
-        # response: str = handle_text_response(text)
-        await update.message.reply_text('Test Successful')
-    if "do" in text:
-        check_new_entries()
-    # if message_type == 'group':
-    #     if BOT_USERNAME in text:
-    #         new_text: str = text.replace(BOT_USERNAME, '').strip()
-    #         response: str = handle_text_response(new_text)
-    #     else:
-    #         return
-    # else:
-    #     response: str = handle_text_response(text)
-
-    # print('Bot:', response)
-    # await update.message.reply_text(response)
+    match text:
+        case "bot version":
+            logger.info('Got \'bot version\' message')
+            await update.message.reply_text(f'The bot version is: {BOT_VERSION}')
+        case "live":
+            logger.info('Got \'live\' message')
+            await update.message.reply_text(f'The bot is live!')
+        case 'set log info':
+            logger.info(f'Got \'set log info\' message')
+            change_log_level(logging.INFO)
+            await update.message.reply_text(f'Log level set to INFO')
+        case 'set log debug':
+            logger.debug(f'Got \'set log debug\' message')
+            change_log_level(logging.DEBUG)
+            await update.message.reply_text(f'Log level set to DEBUG')
+        case 'test method':
+            logger.info(f'Got \'test method\' message')
+            #check_new_products()
+            check_function()
+        case 'list users':
+            logger.info(f'Got \'list users\' message')
+            users = list_users()
+            if users:
+                users = "\n".join([f"created_at = {user[0]}, user id: {user[1]}, full_name: {user[2]}, username: {user[3]},"
+                                   f" language_code: {user[4]}, link: {user[5]}"
+                             for user in users])
+                await update.message.reply_text(users)
+            else:
+                await update.message.reply_text(f'No users found!')
 
 
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -189,16 +255,20 @@ async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def init_logger():
     logger.debug('initializing logger')
-    # Set the threshold logging level of the logger to INFO
-    if DEBUG:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.setLevel(logging.INFO)
+    logger.setLevel(LOG_LEVEL)
     # Create a stream-based handler that writes the log entries    #into the standard output stream
     handler = logging.StreamHandler(sys.stdout)
-    # Create a formatter for the logs
+    # Create a formatter and apply it to the handler
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
     logger.addHandler(handler)
 
+
+def change_log_level(new_level):
+    global LOG_LEVEL
+    LOG_LEVEL = new_level
+    logger.setLevel(LOG_LEVEL)
+    logger.info(f'logger level set to {LOG_LEVEL}')
 
 
 def check_function():
@@ -218,6 +288,9 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("start_listen", start_listen_command))
     app.add_handler(CommandHandler("stop_listen", stop_listen_command))
+
+    # Set up the database
+    setup_database()
 
     # Message handler for all text messages
     app.add_handler(MessageHandler(filters.TEXT, handle_message))
