@@ -12,12 +12,12 @@ import Enums
 import feedparser
 import time
 
-BOT_VERSION: Final = 1.1
+BOT_VERSION: Final = 1.2
 
 TOKEN: Final = os.environ.get('TOKEN')
 BOT_USERNAME: Final = "@WallaFeederBot"
-DEBUG: Final = True
 logger = logging.getLogger('WallaFeederLogger')
+LOG_LEVEL = logging.INFO  # Default level
 
 PERMITTED_ID: Final = int(os.environ.get('PERMITTED_ID'))
 
@@ -155,6 +155,8 @@ def send_message_to_group(RSSObject, chat_id, thread_id=0):
                     str(RSSObject.description) + "\n\n" + "וואלה - ערוץ העדכונים הלא רשמי")
         headers = {'content-type': 'application/json', 'Accept-Charset': 'UTF-8'}
         r = requests.post(url_post, headers=headers)
+    logger.debug(f'url_post: {url_post}')
+    logger.debug(f'headers: {headers}')
 
 
 def check_new_entries():
@@ -235,7 +237,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(f'Log level set to DEBUG')
         case 'test method':
             logger.info(f'Got \'test method\' message')
-            #check_new_products()
             check_function()
         case 'list users':
             logger.info(f'Got \'list users\' message')
